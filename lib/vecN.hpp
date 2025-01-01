@@ -1,3 +1,5 @@
+#ifndef VECN
+#define VECN
 namespace std {
 
   /**
@@ -108,3 +110,4 @@ namespace std {
   Vector2D mix(Vector2D a, Vector2D b, double t);
   Vector3D mix(Vector3D a, Vector3D b, double t);
 }
+#endif

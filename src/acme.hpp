@@ -65,14 +65,15 @@ namespace ACME {
     bool noClip    = false;
   };
 
-  const Scene2D backstage2D;
-  const Scene3D backstage3D;
-
   unsigned long getHash (unsigned short x, unsigned short y, unsigned short z);
   TilemapIndex unHash (unsigned long hash);
 
   TilemapIndex getTilemapIndex (unsigned short x, unsigned short y);
   TilemapIndex getTilemapIndex (unsigned short x, unsigned short y, unsigned short z);
+
+  class Scene2D;
+  class Scene3D;
+
 
   class Contact2D {
     public:
@@ -119,6 +120,8 @@ namespace ACME {
     std::string typeName;
     std::string name;
 
+    char alias;
+
     std::Vector2D initialSize = {1.0, 1.0};
     std::Vector2D initialOffset = {0.0, 0.0};
   };
@@ -127,9 +130,12 @@ namespace ACME {
     std::string typeName;
     std::string name;
 
+    char alias;
+
     std::Vector3D initialSize = {1.0, 1.0, 1.0};
     std::Vector3D initialOffset = {0.0, 0.0, 0.0};
   };
+
 
   class ContactList2D {
     public:
@@ -168,7 +174,7 @@ namespace ACME {
       Entity2D (double x, double y);
       Entity2D (std::Vector2D pos);
 
-      Scene2D *parentScene = &backstage2D;
+      Scene2D *parentScene;
 
       virtual void tick (double deltaTime);
       virtual void reset ();
@@ -186,6 +192,8 @@ namespace ACME {
       bool isDead = false;
       bool suspended = false;
 
+      EntityFlags flags;
+
       unsigned long index = 0;
 
       std::string name = "";
@@ -196,7 +204,7 @@ namespace ACME {
       Entity3D (double x, double y, double z);
       Entity3D (std::Vector3D pos);
 
-      Scene3D *parentScene = &backstage3D;
+      Scene3D *parentScene;
 
       virtual void tick (double deltaTime);
       virtual void reset ();
@@ -213,47 +221,11 @@ namespace ACME {
       bool isDead = false;
       bool suspended = false;
 
+      EntityFlags flags;
+
       unsigned long index = 0;
 
       std::string name = "";
-  };
-
-  struct EntityConfig2D {
-    int entityType = ACME_ENTITY_TYPE_2D;
-    std::string typeName;
-    std::string name;
-
-    std::Vector2D initialSize = {1.0, 1.0};
-    std::Vector2D initialOffset = {0.0, 0.0};
-    
-    void (*move) (Entity2D* self, double deltaTime) = nullptr;
-    void (*blit) (Contact2D* tileOrEntity) = nullptr;
-    void (*onreset) (Entity2D* self) = nullptr;
-    void (*onstatechange)(TileEntity2D* self, unsigned short newState, unsigned short oldState) = nullptr;
-    void (*oncollide)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
-    void (*oncollidetop)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
-    void (*oncollidebottom)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
-    void (*oncollideeast)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
-    void (*oncollidewest)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
-  };
-  struct EntityConfig3D {
-    int entityType = ACME_ENTITY_TYPE_3D;
-    std::string typeName;
-    std::string name;
-
-    std::Vector3D initialSize = {1.0, 1.0, 1.0};
-    std::Vector3D initialOffset = {0.0, 0.0, 0.0};
-    
-    void (*move) (Entity3D *self, double deltaTime) = nullptr;
-    void (*onreset) (Entity3D *self) = nullptr;
-    void (*onstatechange)(TileEntity3D *self, unsigned short newState, unsigned short oldState) = nullptr;
-    void (*oncollide)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollidetop)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollidebottom)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollideeast)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollidewest)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollidenorth)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
-    void (*oncollidesouth)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
   };
 
   class EntityList2D {
@@ -338,8 +310,6 @@ namespace ACME {
 
       std::Vector2D previousPosition = {0.0, 0.0};
 
-      EntityFlags flags;
-
       void tick (double deltaTime);
       void reset ();
 
@@ -363,8 +333,6 @@ namespace ACME {
 
       std::Vector3D previousPosition = {0.0, 0.0, 0.0};
 
-      EntityFlags flags;
-
       void tick (double deltaTime);
       void reset ();
 
@@ -381,6 +349,44 @@ namespace ACME {
     private:
       void getTilemapContacts (ContactList3D* list);
       void getEntityContacts (ContactList3D* list);
+  };
+
+  struct EntityConfig2D {
+    int entityType = ACME_ENTITY_TYPE_2D;
+    std::string typeName;
+    std::string name;
+
+    std::Vector2D initialSize = {1.0, 1.0};
+    std::Vector2D initialOffset = {0.0, 0.0};
+    
+    void (*move) (Entity2D* self, double deltaTime) = nullptr;
+    void (*blit) (Contact2D* tileOrEntity) = nullptr;
+    void (*onreset) (Entity2D* self) = nullptr;
+    void (*onstatechange)(TileEntity2D* self, unsigned short newState, unsigned short oldState) = nullptr;
+    void (*oncollide)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
+    void (*oncollidetop)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
+    void (*oncollidebottom)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
+    void (*oncollideeast)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
+    void (*oncollidewest)(PhysicsEntity2D* self, Contact2D* contact) = nullptr;
+  };
+  struct EntityConfig3D {
+    int entityType = ACME_ENTITY_TYPE_3D;
+    std::string typeName;
+    std::string name;
+
+    std::Vector3D initialSize = {1.0, 1.0, 1.0};
+    std::Vector3D initialOffset = {0.0, 0.0, 0.0};
+    
+    void (*move) (Entity3D *self, double deltaTime) = nullptr;
+    void (*onreset) (Entity3D *self) = nullptr;
+    void (*onstatechange)(TileEntity3D *self, unsigned short newState, unsigned short oldState) = nullptr;
+    void (*oncollide)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollidetop)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollidebottom)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollideeast)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollidewest)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollidenorth)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
+    void (*oncollidesouth)(PhysicsEntity3D *self, Contact3D* contact) = nullptr;
   };
 
   class Camera2D : public Entity2D {
@@ -446,20 +452,20 @@ namespace ACME {
     public:
       Scene2D() {}
 
+      int debug ();
       void tick (double deltaTime);
       void wipe ();
       void reset ();
       void loadMap (Tilemap2D *map);
       void reloadMap ();
 
-      Entity2D summon (EntityConfig2D config, double x, double y);
-      Entity2D summon (EntityConfig2D config, std::Vector2D pos);
+      void summon (EntityConfig2D config, double x, double y);
+      void summon (EntityConfig2D config, std::Vector2D pos);
       void kill (Entity2D *entity);
       void link (Entity2D *entity);
       void unlink (Entity2D *entity);
 
-      std::map<char, TileConfig2D> tileConfigRegister;
-
+      void registerTileConfig (TileConfig2D config);
 
       void (*ontick) (double deltaTime) = nullptr;
       void (*onreset) () = nullptr;
@@ -477,6 +483,8 @@ namespace ACME {
     private:
       Tilemap2D *newMap = nullptr;
       EntityList2D summonedEntities;
+      std::map<char, TileConfig2D> tileConfigs;
+
       bool shouldWipe = false;
       bool shouldReset = false;
   };
@@ -484,14 +492,15 @@ namespace ACME {
     public:
       Scene3D() {}
 
+      void debug ();
       void tick (double deltaTime);
       void wipe ();
       void reset ();
       void loadMap (Tilemap3D *map);
       void reloadMap ();
 
-      Entity3D summon (EntityConfig3D rules, double x, double y, double z);
-      Entity3D summon (EntityConfig3D rules, std::Vector3D pos);
+      void summon (EntityConfig3D rules, double x, double y, double z);
+      void summon (EntityConfig3D rules, std::Vector3D pos);
       void kill (Entity3D *entity);
       void link (Entity3D *entity);
       void unlink (Entity3D *entity);
@@ -514,6 +523,5 @@ namespace ACME {
       bool shouldWipe = false;
       bool shouldReset = false;
   };
-
   
 };
