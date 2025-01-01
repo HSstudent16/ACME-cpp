@@ -6,6 +6,7 @@ The **A**xis-aligned **C**ollision **M**anagement **E**ngine
 
  - <a href = "#about">About ACME</a>
  - <a href = "#howto">How to use ACME</a>
+ - <a href = "#changes">Change Log</a>
  - <a href = "#docs" >Documentation</a>
 
 
@@ -26,6 +27,16 @@ This project was originally started in JavaScript, for use with web games, but h
     #include "./path/to/acme/src/acme.hpp"
     ```
  5. Spend hours trying to understand how it works
+
+<h2 id = "changes">Change log</h2>
+
+**0.0.0**
+: Initial upload to github
+
+**0.0.1**
+: Fix indexing bug with `Level::write`
+: Fix initialization inside `switch` statement
+: Fix `VecN` to only load once
 
 <h2 id = "docs">Documentation</h2>
 

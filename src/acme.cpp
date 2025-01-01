@@ -1,4 +1,4 @@
-#include "acme.hpp";
+#include "acme.hpp"
 
 #define callIfAble(a)  if (a != nullptr) a
 #define max(a, b) a > b ? a : b
@@ -23,6 +23,9 @@ bool aabb (ACME::Contact3D* a, ACME::Contact3D* b) {
   );
 }
 
+ACME::Scene2D backstage2D;
+ACME::Scene3D backstage3D;
+
 namespace ACME {
 
   //
@@ -30,7 +33,7 @@ namespace ACME {
   //
 
   unsigned long getHash (unsigned short x, unsigned short y, unsigned short z) {
-    return (z << 32) | (y << 16) | x;
+    return ((unsigned long)z << 32) | ((unsigned long)y << 16) | (unsigned long)x;
   }
   TilemapIndex unHash (unsigned long hash) {
     TilemapIndex idx;
@@ -239,14 +242,17 @@ namespace ACME {
   Entity2D::Entity2D () : Contact2D () {
     initialPosition = {0.0, 0.0};
     entityType = ACME_ENTITY_TYPE_2D;
+    parentScene = &backstage2D;
   }
   Entity2D::Entity2D (double x, double y) : Contact2D (x, y) {
     initialPosition = {x, y};
     entityType = ACME_ENTITY_TYPE_2D;
+    parentScene = &backstage2D;
   }
   Entity2D::Entity2D (std::Vector2D pos) : Contact2D(pos) {
     initialPosition = pos;
     entityType = ACME_ENTITY_TYPE_2D;
+    parentScene = &backstage2D;
   }
 
   void Entity2D::tick (double deltaTime) {
@@ -270,14 +276,17 @@ namespace ACME {
   Entity3D::Entity3D () : Contact3D () {
     initialPosition = {0.0, 0.0, 0.0};
     entityType = ACME_ENTITY_TYPE_3D;
+    parentScene = &backstage3D;
   }
   Entity3D::Entity3D (double x, double y, double z) : Contact3D (x, y, z) {
     initialPosition = {x, y, z};
     entityType = ACME_ENTITY_TYPE_3D;
+    parentScene = &backstage3D;
   }
   Entity3D::Entity3D (std::Vector3D pos) : Contact3D(pos) {
     initialPosition = pos;
     entityType = ACME_ENTITY_TYPE_3D;
+    parentScene = &backstage3D;
   }
 
   void Entity3D::tick (double deltaTime) {
@@ -701,7 +710,7 @@ namespace ACME {
 
         data = map->read(index);
 
-        Contact2D tile{ddx, ddy};
+        Contact2D tile{(double)ddx, (double)ddy};
 
         tile.entityType = ACME_TILE_TYPE_2D;
 
@@ -838,15 +847,17 @@ namespace ACME {
 
     for (ddy = startY; ddy < endY; ddy ++) {
       for (ddx = startX; ddx < endX; ddx ++) {
-        index = getTilemapIndex(ddx, ddy);
+        for (ddz = startZ; ddz < endZ; ddz ++) {
+          index = getTilemapIndex(ddx, ddy, ddz);
 
-        data = map->read(index);
+          data = map->read(index);
 
-        Contact3D tile{ddx, ddy, ddz};
+          Contact3D tile{(double)ddx, (double)ddy, (double)ddz};
 
-        tile.entityType = ACME_TILE_TYPE_3D;
+          tile.entityType = ACME_TILE_TYPE_3D;
 
-        list->add(&tile);
+          list->add(&tile);
+        }
       }
     }    
   }
@@ -909,7 +920,7 @@ namespace ACME {
 
         data = map->read(index);
 
-        Contact2D tile{ddx, ddy};
+        Contact2D tile{(double)ddx, (double)ddy};
 
         list->add(&tile);
       }
@@ -962,10 +973,13 @@ namespace ACME {
   unsigned short Tilemap2D::write (TilemapIndex idx, unsigned short value) {
     if (idx.x >= width || idx.y >= height || idx.z > 0)
       throw "[ACME] Unable to read from tilemap; invalid index.";
-    
-    unsigned short oldValue = data[idx.hash];
 
-    data[idx.hash] = value;
+    // unsigned short oldValue = data[idx.hash]; I'm leaving this is cuz it's wrong, and I want to remember
+    // never to use data[idx.hash] again.  Spent 20 minutes debugging this, smh
+    unsigned long index = idx.y * width + idx.x;
+    unsigned short oldValue = data[index];
+
+    data[index] = value;
 
     return oldValue;
   }
@@ -1010,6 +1024,9 @@ namespace ACME {
   // Scene 2D class; a wrapper class for managing 2d entities & a tilemap
   //
 
+  int Scene2D::debug () {
+    return 0;
+  }
   void Scene2D::tick (double deltaTime) {
     entities.tickAll (deltaTime);
     tileEntities.tickAll (deltaTime);
@@ -1062,10 +1079,14 @@ namespace ACME {
   void Scene2D::reloadMap () {
     newMap = tilemap;
   }
-  Entity2D Scene2D::summon (EntityConfig2D config, std::Vector2D pos) {
+  void Scene2D::summon (EntityConfig2D config, std::Vector2D pos) {
+    Camera2D *camera;
+    Entity2D *entity;
+    PhysicsEntity2D *p_entity;
+
     switch (config.entityType) {
       case ACME_CAMERA_TYPE_2D:
-        Camera2D *camera = new Camera2D();
+        camera = new Camera2D();
 
         camera->position = pos + config.initialOffset;
         camera->initialPosition = pos + config.initialOffset;
@@ -1081,14 +1102,16 @@ namespace ACME {
 
         summonedEntities.add(camera);
 
-        delete camera;        
-      break;
-      case ACME_CONTACT_TYPE_2D:
-      case ACME_TILE_TYPE_2D:
+        delete camera;
+      return;
+      case ACME_CONTACT_TYPE_2D: 
         throw std::runtime_error("Cannot summon entity of type 'Contact2D'");
-      break;
+      return;
+      case ACME_TILE_TYPE_2D:
+        throw std::runtime_error("Cannot summon entity of type 'Tile2D'");
+      return;
       case ACME_ENTITY_TYPE_2D:
-        Entity2D *entity = new Entity2D (pos + config.initialOffset);
+        entity = new Entity2D (pos + config.initialOffset);
 
         entity->size = config.initialSize;
         entity->initialSize = config.initialSize;
@@ -1102,9 +1125,9 @@ namespace ACME {
         summonedEntities.add(entity);
 
         delete entity;
-      break;
+      return;
       case ACME_PHYSICS_ENTITY_TYPE_2D:
-        PhysicsEntity2D *p_entity = new PhysicsEntity2D (pos + config.initialOffset);
+        p_entity = new PhysicsEntity2D (pos + config.initialOffset);
 
         p_entity->size = config.initialSize;
         p_entity->initialSize = config.initialSize;
@@ -1123,16 +1146,16 @@ namespace ACME {
         summonedEntities.add(p_entity);
 
         delete p_entity;
-      break;
+      return;
       case ACME_TILE_ENTITY_TYPE_2D:
         // Overwrite
-      break;
+      return;
       case ACME_NULL_TYPE_2D:
-      break;
+      return;
 
     }
   }
-  Entity2D Scene2D::summon (EntityConfig2D config, double x, double y) {
+  void Scene2D::summon (EntityConfig2D config, double x, double y) {
     summon(config, std::vec2(x, y));
   }
   void Scene2D::kill (Entity2D *entity) {
@@ -1140,7 +1163,9 @@ namespace ACME {
   }
   void Scene2D::link (Entity2D *entity) {}
   void Scene2D::unlink (Entity2D *entity) {}
-
+  void Scene2D::registerTileConfig (TileConfig2D config) {
+    tileConfigs.insert({config.alias, config});
+  }
 
 
   //
@@ -1186,5 +1211,5 @@ namespace ACME {
     newMap = tilemap;
   }
 
-
+  
 };
